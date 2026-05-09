@@ -661,7 +661,7 @@ function enviarEmail() {
   const d = registros.find(r => r.id === currentId) || registros[registros.length - 1];
   const subject = encodeURIComponent(`[Quantitech] Abastecimento — ${d.empresa} / ${d.veiculo} — ${d.data}`);
   const body = encodeURIComponent(montarEmail(d));
-  window.location.href = `mailto:registros@quantitech.com.br?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:contato@quantitech.tech?subject=${subject}&body=${body}`;
   d.enviado = true;
   localStorage.setItem('qt_registros', JSON.stringify(registros));
 }
@@ -730,7 +730,7 @@ function enviarRegistro(id) {
   if (!d) return;
   const subject = encodeURIComponent(`[Quantitech] Abastecimento — ${d.empresa} / ${d.veiculo} — ${d.data}`);
   const body = encodeURIComponent(montarEmail(d));
-  window.location.href = `mailto:registros@quantitech.com.br?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:contato@quantitech.tech?subject=${subject}&body=${body}`;
   d.enviado = true;
   localStorage.setItem('qt_registros', JSON.stringify(registros));
   setTimeout(renderHist, 1000);
