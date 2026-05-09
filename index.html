@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<title>Quantitech — Registro de Abastecimento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface2: #1e1e1e;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.15);
+  --text: #f0ede8;
+  --muted: #888;
+  --accent: #c8f050;
+  --accent2: #8bdb20;
+  --warn: #f0a050;
+  --danger: #f05050;
+  --ok: #50d090;
+  --radius: 12px;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; padding-bottom: 100px; }
+
+/* HEADER */
+.header { background: var(--bg); border-bottom: 1px solid var(--border); padding: 16px 20px 12px; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-family: var(--mono); }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.badge-offline { font-size: 11px; font-family: var(--mono); padding: 3px 8px; border-radius: 20px; background: rgba(240,160,80,0.15); color: var(--warn); border: 1px solid rgba(240,160,80,0.3); display: none; }
+.badge-offline.show { display: block; }
+.btn-hist { font-size: 12px; font-family: var(--mono); padding: 4px 10px; border-radius: 8px; background: transparent; color: var(--muted); border: 1px solid var(--border2); cursor: pointer; }
+.btn-hist:active { background: var(--surface2); }
+
+/* PROGRESS */
+.progress-wrap { padding: 16px 20px 0; }
+.progress-label { font-size: 11px; font-family: var(--mono); color: var(--muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
+.progress-bar { height: 2px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+.step-dots { display: flex; gap: 6px; margin-top: 10px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); transition: all .3s; }
+.dot.done { background: var(--accent); }
+.dot.active { background: var(--accent); width: 18px; border-radius: 3px; }
+
+/* STEPS */
+.steps-wrap { padding: 0 20px; margin-top: 24px; }
+.step { display: none; }
+.step.active { display: block; }
+.step-num { font-size: 11px; font-family: var(--mono); color: var(--accent); letter-spacing: .1em; margin-bottom: 6px; }
+.step-title { font-size: 24px; font-weight: 800; line-height: 1.2; margin-bottom: 4px; }
+.step-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
+
+/* FIELDS */
+.field { margin-bottom: 18px; }
+.lbl { font-size: 12px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; display: block; }
+.lbl span.req { color: var(--accent); margin-left: 2px; }
+input[type=text], input[type=number], input[type=date], input[type=time], select, textarea {
+  width: 100%; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius);
+  color: var(--text); font-family: var(--mono); font-size: 16px; padding: 14px 16px;
+  outline: none; transition: border-color .2s, background .2s; appearance: none; -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); background: var(--surface2); }
+input.error, select.error { border-color: var(--danger); }
+textarea { resize: none; height: 80px; font-size: 14px; }
+select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hint { font-size: 11px; font-family: var(--mono); color: var(--muted); margin-top: 6px; padding: 8px 10px; background: var(--surface2); border-radius: 8px; border-left: 2px solid var(--accent); line-height: 1.5; }
+.hint.warn { border-left-color: var(--warn); }
+
+/* PHOTO BUTTON */
+.photo-btn { width: 100%; background: var(--surface); border: 1px dashed var(--border2); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: border-color .2s, background .2s; }
+.photo-btn:active { background: var(--surface2); border-color: var(--accent); }
+.photo-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.photo-btn p { font-size: 13px; font-weight: 600; color: var(--text); }
+.photo-btn small { font-size: 11px; font-family: var(--mono); color: var(--muted); }
+.photo-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.photo-thumb { width: 72px; height: 72px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border2); }
+.photo-count { font-size: 12px; font-family: var(--mono); color: var(--ok); margin-top: 8px; }
+
+/* TIPO SELECTOR */
+.tipo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tipo-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 16px; cursor: pointer; transition: all .2s; }
+.tipo-card.sel { border-color: var(--accent); background: rgba(200,240,80,0.08); }
+.tipo-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.tipo-card p { font-size: 11px; font-family: var(--mono); color: var(--muted); line-height: 1.4; }
+.tipo-card .tipo-icon { font-size: 24px; margin-bottom: 10px; }
+.tipo-card.sel h3 { color: var(--accent); }
+
+/* CHECKLIST */
+.checklist { display: flex; flex-direction: column; gap: 10px; }
+.chk-item { display: flex; align-items: flex-start; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; transition: all .2s; }
+.chk-item.checked { border-color: rgba(80,208,144,0.4); background: rgba(80,208,144,0.06); }
+.chk-box { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all .2s; margin-top: 1px; }
+.chk-item.checked .chk-box { background: var(--ok); border-color: var(--ok); }
+.chk-check { color: #0a0a0a; font-size: 13px; font-weight: 700; display: none; }
+.chk-item.checked .chk-check { display: block; }
+.chk-text { flex: 1; }
+.chk-text strong { font-size: 14px; font-weight: 600; display: block; margin-bottom: 3px; }
+.chk-text small { font-size: 12px; font-family: var(--mono); color: var(--muted); line-height: 1.4; }
+.chk-req { font-size: 10px; font-family: var(--mono); color: var(--accent); margin-left: 4px; }
+.chk-progress { font-size: 12px; font-family: var(--mono); color: var(--muted); margin-bottom: 14px; }
+.chk-progress span { color: var(--accent); font-weight: 700; }
+
+/* NAV BUTTONS */
+.nav { display: flex; gap: 10px; margin-top: 32px; padding-bottom: 20px; }
+.btn-back { flex: 0 0 52px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text); font-family: var(--mono); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.btn-back:active { background: var(--surface2); }
+.btn-next { flex: 1; background: var(--accent); border: none; border-radius: var(--radius); color: #0a0a0a; font-family: var(--sans); font-size: 15px; font-weight: 800; padding: 16px; cursor: pointer; letter-spacing: .02em; transition: background .2s, transform .1s; }
+.btn-next:active { background: var(--accent2); transform: scale(0.98); }
+.btn-next:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; transform: none; }
+
+/* REVIEW CARD */
+.review-card { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.review-card h4 { font-size: 11px; font-family: var(--mono); color: var(--accent); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+.review-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.review-row:last-child { border-bottom: none; }
+.review-row .k { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.review-row .v { font-weight: 600; text-align: right; max-width: 60%; }
+.eco-banner { background: rgba(200,240,80,0.1); border: 1px solid rgba(200,240,80,0.3); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; text-align: center; }
+.eco-banner .eco-num { font-size: 36px; font-weight: 800; color: var(--accent); font-family: var(--mono); }
+.eco-banner .eco-lbl { font-size: 12px; font-family: var(--mono); color: var(--muted); margin-top: 2px; }
+
+/* SUCCESS */
+.success-wrap { text-align: center; padding: 40px 20px; }
+.success-icon { width: 72px; height: 72px; border-radius: 50%; background: rgba(80,208,144,0.15); border: 2px solid var(--ok); display: flex; align-items: center; justify-content: center; font-size: 32px; margin: 0 auto 24px; }
+.success-wrap h2 { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
+.success-wrap p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 32px; }
+.btn-email { width: 100%; background: var(--accent); border: none; border-radius: var(--radius); color: #0a0a0a; font-family: var(--sans); font-size: 15px; font-weight: 800; padding: 16px; cursor: pointer; margin-bottom: 10px; }
+.btn-new { width: 100%; background: transparent; border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text); font-family: var(--sans); font-size: 14px; font-weight: 600; padding: 14px; cursor: pointer; }
+
+/* HISTORY */
+.hist-wrap { display: none; padding: 20px; }
+.hist-wrap.show { display: block; }
+.hist-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+.hist-item h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.hist-item .hist-meta { font-size: 11px; font-family: var(--mono); color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; }
+.hist-item .hist-eco { font-size: 13px; font-family: var(--mono); color: var(--accent); margin-top: 6px; font-weight: 600; }
+.hist-item .hist-pend { color: var(--warn); }
+.btn-send-pend { font-size: 12px; font-family: var(--mono); padding: 4px 10px; border-radius: 8px; background: rgba(240,160,80,0.1); color: var(--warn); border: 1px solid rgba(240,160,80,0.3); cursor: pointer; margin-top: 8px; }
+.empty-hist { text-align: center; padding: 40px 0; font-family: var(--mono); color: var(--muted); font-size: 13px; }
+
+/* TIMESTAMP */
+.ts-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-family: var(--mono); color: var(--ok); background: rgba(80,208,144,0.1); border: 1px solid rgba(80,208,144,0.2); border-radius: 8px; padding: 6px 10px; margin-top: 8px; }
+
+/* HIDDEN FILE INPUT */
+#photo-input { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Quantitech</div>
+  <div class="header-right">
+    <div class="badge-offline" id="offline-badge">Sem internet</div>
+    <button class="btn-hist" onclick="toggleHist()">Registros</button>
+  </div>
+</div>
+
+<input type="file" id="photo-input" accept="image/*" capture="environment" multiple>
+
+<div id="main-form">
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="prog-label">Passo 1 de 5</span>
+      <span id="prog-pct">20%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:20%"></div></div>
+    <div class="step-dots" id="step-dots"></div>
+  </div>
+
+  <div class="steps-wrap">
+
+    <!-- STEP 1 — IDENTIFICAÇÃO -->
+    <div class="step active" id="step-1">
+      <div class="step-num">Passo 01 / 05</div>
+      <div class="step-title">Identificação</div>
+      <div class="step-sub">Dados do equipamento e responsável pelo registro.</div>
+      <div class="field">
+        <label class="lbl">Tipo de equipamento <span class="req">*</span></label>
+        <div class="tipo-grid">
+          <div class="tipo-card sel" onclick="selTipo(this,'onibus')" data-tipo="onibus">
+            <div class="tipo-icon">🚌</div>
+            <h3>Ônibus / van</h3>
+            <p>Frota urbana<br>Métrica: km/L</p>
+          </div>
+          <div class="tipo-card" onclick="selTipo(this,'caminhao')" data-tipo="caminhao">
+            <div class="tipo-icon">🚛</div>
+            <h3>Caminhão</h3>
+            <p>Transporte rodoviário<br>Métrica: km/L</p>
+          </div>
+          <div class="tipo-card" onclick="selTipo(this,'gerador')" data-tipo="gerador">
+            <div class="tipo-icon">⚡</div>
+            <h3>Gerador</h3>
+            <p>Estacionário<br>Métrica: L/h</p>
+          </div>
+          <div class="tipo-card" onclick="selTipo(this,'maquina')" data-tipo="maquina">
+            <div class="tipo-icon">🏗️</div>
+            <h3>Linha amarela</h3>
+            <p>Mineração / construção<br>Métrica: L/h</p>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl">Empresa / cliente <span class="req">*</span></label>
+        <input type="text" id="f_empresa" placeholder="Nome da empresa">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="lbl">Identificação do veículo <span class="req">*</span></label>
+          <input type="text" id="f_veiculo" placeholder="Placa ou nº série">
+        </div>
+        <div class="field">
+          <label class="lbl">Operador / motorista</label>
+          <input type="text" id="f_operador" placeholder="Nome">
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl">Equipamento instalado desde</label>
+        <input type="date" id="f_dt_inst">
+      </div>
+      <div class="nav">
+        <button class="btn-next" onclick="goStep(2)">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2 — CHECKLIST PRÉ-REGISTRO -->
+    <div class="step" id="step-2">
+      <div class="step-num">Passo 02 / 05</div>
+      <div class="step-title">Checklist pré-registro</div>
+      <div class="step-sub">Confirme antes de registrar os dados. Itens obrigatórios marcados com ★</div>
+      <div class="chk-progress">Concluídos: <span id="chk-count">0</span> / 5</div>
+      <div class="checklist" id="checklist">
+        <div class="chk-item" onclick="toggleChk(this)" data-req="true">
+          <div class="chk-box"><span class="chk-check">✓</span></div>
+          <div class="chk-text">
+            <strong>Tanque abastecido "boca cheia" <span class="chk-req">★</span></strong>
+            <small>O tanque está completamente cheio agora. Abastecimento parcial invalida a medição.</small>
+          </div>
+        </div>
+        <div class="chk-item" onclick="toggleChk(this)" data-req="true">
+          <div class="chk-box"><span class="chk-check">✓</span></div>
+          <div class="chk-text">
+            <strong>Nota fiscal do posto em mãos <span class="chk-req">★</span></strong>
+            <small>A NF com a quantidade exata de litros é o único dado auditável. Guarde e fotografe.</small>
+          </div>
+        </div>
+        <div class="chk-item" onclick="toggleChk(this)" data-req="true">
+          <div class="chk-box"><span class="chk-check">✓</span></div>
+          <div class="chk-text">
+            <strong>Hodômetro / horímetro legível <span class="chk-req">★</span></strong>
+            <small>A leitura atual do painel será registrada. Fotografe antes de sair do veículo.</small>
+          </div>
+        </div>
+        <div class="chk-item" onclick="toggleChk(this)">
+          <div class="chk-box"><span class="chk-check">✓</span></div>
+          <div class="chk-text">
+            <strong>Condição de operação equivalente ao período anterior</strong>
+            <small>Mesma rota, mesmo tipo de carga. Mudança de perfil deve ser anotada nas observações.</small>
+          </div>
+        </div>
+        <div class="chk-item" onclick="toggleChk(this)">
+          <div class="chk-box"><span class="chk-check">✓</span></div>
+          <div class="chk-text">
+            <strong>Nenhuma manutenção relevante entre abastecimentos</strong>
+            <small>Troca de filtro, injeção ou pneus deve ser registrada nas observações.</small>
+          </div>
+        </div>
+      </div>
+      <div id="chk-warn" style="display:none; margin-top:14px" class="hint warn">
+        Itens obrigatórios (★) não confirmados. Confirme todos antes de prosseguir ou anote nas observações.
+      </div>
+      <div class="nav">
+        <button class="btn-back" onclick="goStep(1)">←</button>
+        <button class="btn-next" onclick="goStep(3)">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3 — DADOS DE CONSUMO -->
+    <div class="step" id="step-3">
+      <div class="step-num">Passo 03 / 05</div>
+      <div class="step-title">Dados de consumo</div>
+      <div class="step-sub" id="s3-sub">Registre a leitura do hodômetro e os litros desta recarga.</div>
+      <div class="field">
+        <label class="lbl" id="lbl-medidor">Hodômetro atual (km) <span class="req">*</span></label>
+        <input type="number" id="f_medidor_atual" placeholder="Ex: 124850" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label class="lbl" id="lbl-medidor-ant">Hodômetro no abastecimento anterior (km) <span class="req">*</span></label>
+        <input type="number" id="f_medidor_ant" placeholder="Ex: 123200" inputmode="numeric">
+        <div class="hint">Se for o 1º registro, use a leitura no momento da instalação do equipamento.</div>
+      </div>
+      <div class="field">
+        <label class="lbl">Litros abastecidos (NF) <span class="req">*</span></label>
+        <input type="number" id="f_litros" placeholder="Ex: 180.5" inputmode="decimal" step="0.1">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="lbl">Data <span class="req">*</span></label>
+          <input type="date" id="f_data">
+        </div>
+        <div class="field">
+          <label class="lbl">Hora</label>
+          <input type="time" id="f_hora">
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl">Preço por litro (R$)</label>
+        <input type="number" id="f_preco" placeholder="6.50" step="0.01" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label class="lbl">Tipo de rota / operação</label>
+        <select id="f_rota">
+          <option value="">Selecione...</option>
+          <option value="urbano">Urbano</option>
+          <option value="rodoviario">Rodoviário</option>
+          <option value="misto">Misto</option>
+          <option value="mineracao_corte">Mineração — corte</option>
+          <option value="mineracao_transporte">Mineração — transporte</option>
+          <option value="estacionario">Estacionário (gerador)</option>
+        </select>
+      </div>
+      <div id="efic-preview" style="display:none; margin-bottom:18px">
+        <div class="eco-banner">
+          <div class="eco-num" id="efic-val">—</div>
+          <div class="eco-lbl" id="efic-lbl">km/L neste ciclo</div>
+        </div>
+      </div>
+      <div class="nav">
+        <button class="btn-back" onclick="goStep(2)">←</button>
+        <button class="btn-next" onclick="goStep(4)">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4 — FOTO E ASSINATURA -->
+    <div class="step" id="step-4">
+      <div class="step-num">Passo 04 / 05</div>
+      <div class="step-title">Evidências</div>
+      <div class="step-sub">Fotos são a âncora do dado. Sem foto, o registro pode ser contestado.</div>
+
+      <div class="field">
+        <label class="lbl">Fotos obrigatórias <span class="req">*</span></label>
+        <div class="photo-btn" onclick="tirarFoto()">
+          <div class="photo-icon">📷</div>
+          <p>Fotografar hodômetro / horímetro</p>
+          <small>Tire também a foto da nota fiscal do posto</small>
+        </div>
+        <div class="photo-preview" id="photo-preview"></div>
+        <div id="photo-count-label" class="photo-count" style="display:none"></div>
+        <div class="ts-badge" id="ts-badge" style="display:none">
+          📍 Localização e horário registrados automaticamente
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="lbl">Nome do responsável do cliente</label>
+        <input type="text" id="f_resp_nome" placeholder="Nome completo">
+      </div>
+      <div class="field">
+        <label class="lbl">Observações / anomalias</label>
+        <textarea id="f_obs" placeholder="Ex: Rota diferente hoje por obras. Pneu trocado na semana passada."></textarea>
+      </div>
+      <div class="field">
+        <label class="lbl">Este registro é referente a</label>
+        <select id="f_periodo">
+          <option value="pos">Período COM o equipamento instalado</option>
+          <option value="pre">Período SEM o equipamento (baseline)</option>
+        </select>
+        <div class="hint">Se for o período sem equipamento, você está registrando o histórico baseline.</div>
+      </div>
+      <div class="nav">
+        <button class="btn-back" onclick="goStep(3)">←</button>
+        <button class="btn-next" onclick="goStep(5)">Revisar →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5 — REVISÃO E ENVIO -->
+    <div class="step" id="step-5">
+      <div class="step-num">Passo 05 / 05</div>
+      <div class="step-title">Revisão</div>
+      <div class="step-sub">Confirme os dados antes de enviar.</div>
+      <div id="review-content"></div>
+      <div class="nav" style="flex-direction:column; gap:10px">
+        <button class="btn-next" onclick="enviar()" style="flex:unset; width:100%">Confirmar e salvar registro</button>
+        <button class="btn-back" onclick="goStep(4)" style="flex:unset; width:100%; height:48px; font-size:13px; font-family:var(--sans)">← Voltar e editar</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="success-screen" style="display:none">
+  <div class="success-wrap">
+    <div class="success-icon">✓</div>
+    <h2>Registro salvo</h2>
+    <p>Dados salvos localmente.<br>Envie por e-mail para a Quantitech agora ou quando tiver internet.</p>
+    <button class="btn-email" onclick="enviarEmail()">Enviar por e-mail</button>
+    <button class="btn-new" onclick="novoRegistro()">Novo registro</button>
+    <div style="margin-top:24px; font-size:11px; font-family:var(--mono); color:var(--muted); text-align:center">
+      Registro #<span id="success-id"></span> · <span id="success-ts"></span>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="hist-wrap" id="hist-wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h2 style="font-size:20px;font-weight:800">Registros</h2>
+    <button class="btn-hist" onclick="toggleHist()">Fechar</button>
+  </div>
+  <div id="hist-list"></div>
+</div>
+
+<script>
+let currentStep = 1;
+const totalSteps = 5;
+let tipoSel = 'onibus';
+let photos = [];
+let registros = JSON.parse(localStorage.getItem('qt_registros') || '[]');
+let currentId = null;
+
+function init() {
+  const today = new Date();
+  const dateStr = today.toISOString().split('T')[0];
+  const timeStr = today.toTimeString().slice(0,5);
+  document.getElementById('f_data').value = dateStr;
+  document.getElementById('f_hora').value = timeStr;
+  updateDots();
+  window.addEventListener('offline', () => document.getElementById('offline-badge').classList.add('show'));
+  window.addEventListener('online', () => document.getElementById('offline-badge').classList.remove('show'));
+  if (!navigator.onLine) document.getElementById('offline-badge').classList.add('show');
+}
+
+function updateDots() {
+  const wrap = document.getElementById('step-dots');
+  wrap.innerHTML = '';
+  for (let i = 1; i <= totalSteps; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < currentStep ? ' done' : i === currentStep ? ' active' : '');
+    wrap.appendChild(d);
+  }
+  const pct = Math.round((currentStep / totalSteps) * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-pct').textContent = pct + '%';
+  document.getElementById('prog-label').textContent = `Passo ${currentStep} de ${totalSteps}`;
+}
+
+function selTipo(el, tipo) {
+  document.querySelectorAll('.tipo-card').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+  tipoSel = tipo;
+  const isLh = tipo === 'gerador' || tipo === 'maquina';
+  document.getElementById('lbl-medidor').textContent = (isLh ? 'Horímetro atual (h)' : 'Hodômetro atual (km)') + ' *';
+  document.getElementById('lbl-medidor-ant').textContent = (isLh ? 'Horímetro no abastecimento anterior (h)' : 'Hodômetro no abastecimento anterior (km)') + ' *';
+  document.getElementById('s3-sub').textContent = isLh ? 'Registre a leitura do horímetro e os litros desta recarga.' : 'Registre a leitura do hodômetro e os litros desta recarga.';
+}
+
+function toggleChk(el) {
+  el.classList.toggle('checked');
+  const count = document.querySelectorAll('.chk-item.checked').length;
+  document.getElementById('chk-count').textContent = count;
+}
+
+function goStep(n) {
+  if (n === 2) {
+    if (!document.getElementById('f_empresa').value.trim() || !document.getElementById('f_veiculo').value.trim()) {
+      document.getElementById('f_empresa').classList.add('error');
+      document.getElementById('f_veiculo').classList.add('error');
+      return;
+    }
+    document.getElementById('f_empresa').classList.remove('error');
+    document.getElementById('f_veiculo').classList.remove('error');
+  }
+  if (n === 3) {
+    const reqs = document.querySelectorAll('.chk-item[data-req="true"]');
+    const allReqDone = Array.from(reqs).every(r => r.classList.contains('checked'));
+    if (!allReqDone) {
+      document.getElementById('chk-warn').style.display = 'block';
+    } else {
+      document.getElementById('chk-warn').style.display = 'none';
+    }
+  }
+  if (n === 4) {
+    const at = parseFloat(document.getElementById('f_medidor_atual').value);
+    const ant = parseFloat(document.getElementById('f_medidor_ant').value);
+    const lt = parseFloat(document.getElementById('f_litros').value);
+    if (!at || !ant || !lt) {
+      ['f_medidor_atual','f_medidor_ant','f_litros'].forEach(id => {
+        if (!document.getElementById(id).value) document.getElementById(id).classList.add('error');
+      });
+      return;
+    }
+    ['f_medidor_atual','f_medidor_ant','f_litros'].forEach(id => document.getElementById(id).classList.remove('error'));
+    const delta = at - ant;
+    const isLh = tipoSel === 'gerador' || tipoSel === 'maquina';
+    if (delta > 0 && lt > 0) {
+      const ef = isLh ? lt / delta : delta / lt;
+      document.getElementById('efic-val').textContent = ef.toFixed(2);
+      document.getElementById('efic-lbl').textContent = isLh ? 'L/h neste ciclo' : 'km/L neste ciclo';
+      document.getElementById('efic-preview').style.display = 'block';
+    }
+  }
+  if (n === 5) {
+    renderReview();
+  }
+  document.getElementById('step-' + currentStep).classList.remove('active');
+  currentStep = n;
+  document.getElementById('step-' + currentStep).classList.add('active');
+  updateDots();
+  window.scrollTo(0, 0);
+}
+
+function tirarFoto() {
+  document.getElementById('photo-input').click();
+}
+
+document.getElementById('photo-input').addEventListener('change', function(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      photos.push(ev.target.result);
+      renderPhotos();
+    };
+    reader.readAsDataURL(f);
+  });
+  document.getElementById('ts-badge').style.display = 'flex';
+});
+
+function renderPhotos() {
+  const prev = document.getElementById('photo-preview');
+  prev.innerHTML = photos.map(p => `<img src="${p}" class="photo-thumb">`).join('');
+  const cl = document.getElementById('photo-count-label');
+  cl.style.display = 'block';
+  cl.textContent = photos.length + (photos.length === 1 ? ' foto registrada ✓' : ' fotos registradas ✓');
+}
+
+function getFormData() {
+  const at = parseFloat(document.getElementById('f_medidor_atual').value) || 0;
+  const ant = parseFloat(document.getElementById('f_medidor_ant').value) || 0;
+  const lt = parseFloat(document.getElementById('f_litros').value) || 0;
+  const delta = at - ant;
+  const isLh = tipoSel === 'gerador' || tipoSel === 'maquina';
+  const ef = (delta > 0 && lt > 0) ? (isLh ? lt / delta : delta / lt) : null;
+  return {
+    id: currentId || ('QT-' + Date.now()),
+    ts: new Date().toISOString(),
+    tipo: tipoSel,
+    empresa: document.getElementById('f_empresa').value,
+    veiculo: document.getElementById('f_veiculo').value,
+    operador: document.getElementById('f_operador').value,
+    dt_inst: document.getElementById('f_dt_inst').value,
+    medidor_atual: at,
+    medidor_ant: ant,
+    delta: delta,
+    litros: lt,
+    data: document.getElementById('f_data').value,
+    hora: document.getElementById('f_hora').value,
+    preco: parseFloat(document.getElementById('f_preco').value) || 0,
+    rota: document.getElementById('f_rota').value,
+    resp_nome: document.getElementById('f_resp_nome').value,
+    obs: document.getElementById('f_obs').value,
+    periodo: document.getElementById('f_periodo').value,
+    eficiencia: ef,
+    unidade: isLh ? 'L/h' : 'km/L',
+    checklist_ok: document.querySelectorAll('.chk-item.checked').length,
+    fotos: photos.length,
+    enviado: false
+  };
+}
+
+function renderReview() {
+  const d = getFormData();
+  const tipoLabel = {onibus:'Ônibus / van', caminhao:'Caminhão', gerador:'Gerador', maquina:'Linha amarela'};
+  const periodoLabel = {pos:'COM equipamento instalado', pre:'SEM equipamento (baseline)'};
+  let html = '';
+  if (d.eficiencia !== null) {
+    html += `<div class="eco-banner"><div class="eco-num">${d.eficiencia.toFixed(2)}</div><div class="eco-lbl">${d.unidade} neste ciclo</div></div>`;
+  }
+  html += `<div class="review-card"><h4>Identificação</h4>`;
+  html += `<div class="review-row"><span class="k">Equipamento</span><span class="v">${tipoLabel[d.tipo]||d.tipo}</span></div>`;
+  html += `<div class="review-row"><span class="k">Empresa</span><span class="v">${d.empresa}</span></div>`;
+  html += `<div class="review-row"><span class="k">Veículo / ID</span><span class="v">${d.veiculo}</span></div>`;
+  if (d.operador) html += `<div class="review-row"><span class="k">Operador</span><span class="v">${d.operador}</span></div>`;
+  html += `</div>`;
+  html += `<div class="review-card"><h4>Consumo</h4>`;
+  html += `<div class="review-row"><span class="k">Data / hora</span><span class="v">${d.data} ${d.hora}</span></div>`;
+  html += `<div class="review-row"><span class="k">Leitura atual</span><span class="v">${d.medidor_atual.toLocaleString('pt-BR')}</span></div>`;
+  html += `<div class="review-row"><span class="k">Leitura anterior</span><span class="v">${d.medidor_ant.toLocaleString('pt-BR')}</span></div>`;
+  html += `<div class="review-row"><span class="k">Percurso / horas</span><span class="v">${d.delta.toLocaleString('pt-BR')}</span></div>`;
+  html += `<div class="review-row"><span class="k">Litros abastecidos</span><span class="v">${d.litros.toFixed(1)} L</span></div>`;
+  if (d.preco > 0) html += `<div class="review-row"><span class="k">Preço / litro</span><span class="v">R$ ${d.preco.toFixed(2)}</span></div>`;
+  if (d.rota) html += `<div class="review-row"><span class="k">Rota / operação</span><span class="v">${d.rota}</span></div>`;
+  html += `</div>`;
+  html += `<div class="review-card"><h4>Protocolo</h4>`;
+  html += `<div class="review-row"><span class="k">Período</span><span class="v">${periodoLabel[d.periodo]}</span></div>`;
+  html += `<div class="review-row"><span class="k">Checklist</span><span class="v">${d.checklist_ok} / 5 itens ✓</span></div>`;
+  html += `<div class="review-row"><span class="k">Fotos</span><span class="v">${d.fotos > 0 ? d.fotos + ' foto(s) ✓' : 'Nenhuma foto'}</span></div>`;
+  if (d.resp_nome) html += `<div class="review-row"><span class="k">Responsável</span><span class="v">${d.resp_nome}</span></div>`;
+  if (d.obs) html += `<div class="review-row"><span class="k">Observações</span><span class="v" style="font-size:12px">${d.obs}</span></div>`;
+  html += `</div>`;
+  document.getElementById('review-content').innerHTML = html;
+}
+
+function enviar() {
+  const d = getFormData();
+  currentId = d.id;
+  d.id = currentId;
+  registros.push(d);
+  localStorage.setItem('qt_registros', JSON.stringify(registros));
+  document.getElementById('main-form').style.display = 'none';
+  document.getElementById('success-screen').style.display = 'block';
+  document.getElementById('success-id').textContent = d.id;
+  document.getElementById('success-ts').textContent = new Date().toLocaleString('pt-BR');
+  window.scrollTo(0, 0);
+}
+
+function montarEmail(d) {
+  const tipoLabel = {onibus:'Ônibus / van', caminhao:'Caminhão', gerador:'Gerador', maquina:'Linha amarela'};
+  const periodoLabel = {pos:'COM equipamento', pre:'SEM equipamento (baseline)'};
+  const efStr = d.eficiencia !== null ? `${d.eficiencia.toFixed(2)} ${d.unidade}` : 'N/D';
+  const body = `REGISTRO DE ABASTECIMENTO — QUANTITECH
+ID: ${d.id}
+Data/hora: ${d.data} ${d.hora}
+
+IDENTIFICAÇÃO
+Equipamento: ${tipoLabel[d.tipo]||d.tipo}
+Empresa: ${d.empresa}
+Veículo / ID: ${d.veiculo}
+Operador: ${d.operador||'—'}
+Período: ${periodoLabel[d.periodo]}
+
+CONSUMO
+Leitura atual: ${d.medidor_atual.toLocaleString('pt-BR')}
+Leitura anterior: ${d.medidor_ant.toLocaleString('pt-BR')}
+Percurso / horas: ${d.delta.toLocaleString('pt-BR')}
+Litros abastecidos: ${d.litros.toFixed(1)} L
+Eficiência neste ciclo: ${efStr}
+Preço por litro: ${d.preco > 0 ? 'R$ '+d.preco.toFixed(2) : '—'}
+Rota / operação: ${d.rota||'—'}
+
+PROTOCOLO
+Checklist: ${d.checklist_ok}/5 itens confirmados
+Fotos registradas: ${d.fotos}
+Responsável cliente: ${d.resp_nome||'—'}
+Observações: ${d.obs||'—'}
+
+---
+Enviado via Quantitech Field App`;
+  return body;
+}
+
+function enviarEmail() {
+  const d = registros.find(r => r.id === currentId) || registros[registros.length - 1];
+  const subject = encodeURIComponent(`[Quantitech] Abastecimento — ${d.empresa} / ${d.veiculo} — ${d.data}`);
+  const body = encodeURIComponent(montarEmail(d));
+  window.location.href = `mailto:registros@quantitech.com.br?subject=${subject}&body=${body}`;
+  d.enviado = true;
+  localStorage.setItem('qt_registros', JSON.stringify(registros));
+}
+
+function novoRegistro() {
+  photos = [];
+  currentId = null;
+  currentStep = 1;
+  document.getElementById('success-screen').style.display = 'none';
+  document.getElementById('main-form').style.display = 'block';
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step-1').classList.add('active');
+  document.querySelectorAll('.chk-item').forEach(c => c.classList.remove('checked'));
+  document.getElementById('chk-count').textContent = '0';
+  document.getElementById('photo-preview').innerHTML = '';
+  document.getElementById('photo-count-label').style.display = 'none';
+  document.getElementById('efic-preview').style.display = 'none';
+  document.getElementById('f_obs').value = '';
+  document.getElementById('f_resp_nome').value = '';
+  const today = new Date();
+  document.getElementById('f_data').value = today.toISOString().split('T')[0];
+  document.getElementById('f_hora').value = today.toTimeString().slice(0,5);
+  updateDots();
+  window.scrollTo(0, 0);
+}
+
+function toggleHist() {
+  const hw = document.getElementById('hist-wrap');
+  const mf = document.getElementById('main-form');
+  const ss = document.getElementById('success-screen');
+  if (hw.classList.contains('show')) {
+    hw.classList.remove('show');
+    if (!currentId || ss.style.display === 'none') mf.style.display = 'block';
+  } else {
+    mf.style.display = 'none';
+    ss.style.display = 'none';
+    hw.classList.add('show');
+    renderHist();
+  }
+}
+
+function renderHist() {
+  const list = document.getElementById('hist-list');
+  if (registros.length === 0) {
+    list.innerHTML = '<div class="empty-hist">Nenhum registro ainda.</div>';
+    return;
+  }
+  const tipoLabel = {onibus:'Ônibus', caminhao:'Caminhão', gerador:'Gerador', maquina:'Linha amarela'};
+  list.innerHTML = [...registros].reverse().map(r => {
+    const efStr = r.eficiencia !== null && r.eficiencia !== undefined ? `${parseFloat(r.eficiencia).toFixed(2)} ${r.unidade}` : '—';
+    return `<div class="hist-item">
+      <h4>${r.empresa} — ${r.veiculo}</h4>
+      <div class="hist-meta">
+        <span>${tipoLabel[r.tipo]||r.tipo}</span>
+        <span>${r.data}</span>
+        <span>${r.litros} L</span>
+      </div>
+      <div class="hist-eco">${efStr}</div>
+      ${!r.enviado ? `<button class="btn-send-pend" onclick="enviarRegistro('${r.id}')">Enviar por e-mail ↑</button>` : '<span style="font-size:11px;font-family:var(--mono);color:var(--ok)">✓ Enviado</span>'}
+    </div>`;
+  }).join('');
+}
+
+function enviarRegistro(id) {
+  const d = registros.find(r => r.id === id);
+  if (!d) return;
+  const subject = encodeURIComponent(`[Quantitech] Abastecimento — ${d.empresa} / ${d.veiculo} — ${d.data}`);
+  const body = encodeURIComponent(montarEmail(d));
+  window.location.href = `mailto:registros@quantitech.com.br?subject=${subject}&body=${body}`;
+  d.enviado = true;
+  localStorage.setItem('qt_registros', JSON.stringify(registros));
+  setTimeout(renderHist, 1000);
+}
+
+init();
+</script>
+</body>
+</html>
