@@ -1,0 +1,73 @@
+import { useState } from 'react'
+import { supabase } from '../lib/supabase'
+
+export function Login() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    setLoading(false)
+    if (authError) setError(authError.message)
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="w-full max-w-sm">
+        <div className="text-center mb-8">
+          <div className="text-4xl font-bold text-blue-700">QT</div>
+          <p className="text-gray-500 text-sm mt-1">Quantitech Field</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-md p-6 space-y-4">
+          <h1 className="text-lg font-semibold text-gray-800">Entrar</h1>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="seu@email.com"
+              autoComplete="username"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-700 text-white font-semibold rounded-lg py-3 text-sm disabled:opacity-60 active:bg-blue-800"
+          >
+            {loading ? 'Entrando...' : 'Entrar'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
