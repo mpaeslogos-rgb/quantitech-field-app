@@ -34,6 +34,20 @@ export interface ConsumptionLog extends ConsumptionLogPayload {
   createdAt: string
 }
 
+export interface UserProfile {
+  id: string
+  fullName: string
+  role: string
+  vehicleId: string | null
+  vehicle: { id: string; plate: string; model: string | null; type: string; sector: string | null } | null
+}
+
+export async function fetchProfile(): Promise<UserProfile> {
+  const res = await fetch(`${BASE}/auth/me`, { headers: await authHeaders() })
+  if (!res.ok) throw new Error('Erro ao carregar perfil')
+  return res.json()
+}
+
 export async function fetchVehicles(): Promise<Vehicle[]> {
   const res = await fetch(`${BASE}/vehicles`, { headers: await authHeaders() })
   if (!res.ok) throw new Error('Erro ao carregar veículos')

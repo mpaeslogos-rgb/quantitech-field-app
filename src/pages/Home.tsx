@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { fetchVehicles, postConsumptionLog } from '../lib/api'
-import type { Vehicle } from '../lib/api'
+import { fetchVehicles, fetchProfile, postConsumptionLog } from '../lib/api'
+import type { Vehicle, UserProfile } from '../lib/api'
 import { enqueue, syncQueue } from '../lib/offlineQueue'
 
 const FUEL_TYPES = ['DIESEL', 'GASOLINA', 'ETANOL', 'BIODIESEL', 'GNV']
@@ -13,6 +13,7 @@ interface HomeProps {
 }
 
 export function Home({ onNavigate }: HomeProps) {
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [vehicleId, setVehicleId] = useState('')
   const [liters, setLiters] = useState('')
@@ -29,6 +30,12 @@ export function Home({ onNavigate }: HomeProps) {
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
   useEffect(() => {
+    fetchProfile()
+      .then(p => {
+        setProfile(p)
+        if (p.vehicleId) setVehicleId(p.vehicleId)
+      })
+      .catch(() => {})
     fetchVehicles().then(setVehicles).catch(() => {})
   }, [])
 
@@ -153,20 +160,32 @@ export function Home({ onNavigate }: HomeProps) {
         {/* Vehicle select */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Veículo *</label>
-          <select
-            required
-            value={vehicleId}
-            onChange={e => setVehicleId(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Selecione um veículo</option>
-            {vehicles.map(v => (
-              <option key={v.id} value={v.id}>
-                {v.plate}{v.model ? ` — ${v.model}` : ''}{v.sector ? ` (${v.sector})` : ''}
-              </option>
-            ))}
-          </select>
-          {selectedVehicle && (
+          {profile?.vehicleId ? (
+            <div className="flex items-center gap-2 border border-green-300 bg-green-50 rounded-lg px-3 py-3">
+              <span className="text-green-700 font-semibold text-sm">
+                {profile.vehicle?.plate}{profile.vehicle?.model ? ` — ${profile.vehicle.model}` : ''}
+              </span>
+              {profile.vehicle?.sector && (
+                <span className="text-xs text-green-500">({profile.vehicle.sector})</span>
+              )}
+              <span className="ml-auto text-xs text-green-400 uppercase tracking-wide">Atribuído</span>
+            </div>
+          ) : (
+            <select
+              required
+              value={vehicleId}
+              onChange={e => setVehicleId(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Selecione um veículo</option>
+              {vehicles.map(v => (
+                <option key={v.id} value={v.id}>
+                  {v.plate}{v.model ? ` — ${v.model}` : ''}{v.sector ? ` (${v.sector})` : ''}
+                </option>
+              ))}
+            </select>
+          )}
+          {selectedVehicle && !profile?.vehicleId && (
             <p className="text-xs text-gray-400 mt-1">Tipo: {selectedVehicle.type}</p>
           )}
         </div>
