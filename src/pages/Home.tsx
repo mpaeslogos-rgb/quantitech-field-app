@@ -29,7 +29,7 @@ export function Home({ onNavigate }: HomeProps) {
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
-  useEffect(() => {
+  function loadData() {
     fetchProfile()
       .then(p => {
         setProfile(p)
@@ -37,6 +37,14 @@ export function Home({ onNavigate }: HomeProps) {
       })
       .catch(() => {})
     fetchVehicles().then(setVehicles).catch(() => {})
+  }
+
+  useEffect(() => {
+    loadData()
+    // Refresh when app resumes (driver opens PWA after admin updates vehicle assignment)
+    const handleVisibility = () => { if (document.visibilityState === 'visible') loadData() }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [])
 
   // auto-sync on reconnect
@@ -126,21 +134,25 @@ export function Home({ onNavigate }: HomeProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-blue-700 text-white px-4 py-4 flex items-center justify-between">
-        <div>
-          <div className="font-bold text-lg">Quantitech Field</div>
-          <div className="text-blue-200 text-xs">Registro de Abastecimento</div>
+      <header className="bg-brand-700 text-white px-4 py-3 flex items-center justify-between">
+        <div className="flex flex-col">
+          <img src="/logo.svg" alt="Quantitech" className="h-7 brightness-0 invert" />
+          {profile?.fullName && (
+            <span className="text-brand-200 text-xs mt-0.5 truncate max-w-[160px]">
+              {profile.fullName}
+            </span>
+          )}
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => onNavigate('history')}
-            className="text-blue-200 text-sm underline"
+            className="text-brand-100 text-sm underline"
           >
             Histórico
           </button>
           <button
             onClick={() => supabase.auth.signOut()}
-            className="text-blue-200 text-sm underline"
+            className="text-brand-100 text-sm underline"
           >
             Sair
           </button>
@@ -175,7 +187,7 @@ export function Home({ onNavigate }: HomeProps) {
               required
               value={vehicleId}
               onChange={e => setVehicleId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               <option value="">Selecione um veículo</option>
               {vehicles.map(v => (
@@ -201,7 +213,7 @@ export function Home({ onNavigate }: HomeProps) {
               step="0.01"
               value={liters}
               onChange={e => setLiters(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="0,00"
             />
           </div>
@@ -213,7 +225,7 @@ export function Home({ onNavigate }: HomeProps) {
               step="0.01"
               value={cost}
               onChange={e => setCost(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="0,00"
             />
           </div>
@@ -229,7 +241,7 @@ export function Home({ onNavigate }: HomeProps) {
               step="1"
               value={odometer}
               onChange={e => setOdometer(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="0"
             />
           </div>
@@ -241,7 +253,7 @@ export function Home({ onNavigate }: HomeProps) {
               step="0.1"
               value={hourmeter}
               onChange={e => setHourmeter(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="0,0"
             />
           </div>
@@ -254,7 +266,7 @@ export function Home({ onNavigate }: HomeProps) {
             <select
               value={fuelType}
               onChange={e => setFuelType(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
             >
               {FUEL_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
@@ -266,7 +278,7 @@ export function Home({ onNavigate }: HomeProps) {
               maxLength={200}
               value={fuelStation}
               onChange={e => setFuelStation(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="Nome do posto"
             />
           </div>
@@ -298,7 +310,7 @@ export function Home({ onNavigate }: HomeProps) {
             maxLength={1000}
             value={notes}
             onChange={e => setNotes(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
             placeholder="Opcional"
           />
         </div>
@@ -306,7 +318,7 @@ export function Home({ onNavigate }: HomeProps) {
         <button
           type="submit"
           disabled={submitting || !vehicleId}
-          className="w-full bg-blue-700 text-white font-semibold rounded-xl py-4 text-base disabled:opacity-60 active:bg-blue-800"
+          className="w-full bg-brand-700 text-white font-semibold rounded-xl py-4 text-base disabled:opacity-60 active:bg-brand-800"
         >
           {uploading ? 'Enviando foto...' : submitting ? 'Registrando...' : 'Registrar Abastecimento'}
         </button>
