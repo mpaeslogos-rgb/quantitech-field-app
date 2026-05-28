@@ -29,19 +29,19 @@ export function Home({ onNavigate }: HomeProps) {
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
 
-  function loadData() {
-    fetchProfile()
-      .then(p => {
-        setProfile(p)
-        if (p.vehicleId) setVehicleId(p.vehicleId)
-      })
-      .catch(() => {})
-    fetchVehicles().then(setVehicles).catch(() => {})
-  }
-
   useEffect(() => {
+    function loadData() {
+      fetchProfile()
+        .then(p => {
+          setProfile(p)
+          if (p.vehicleId) setVehicleId(p.vehicleId)
+        })
+        .catch(() => {})
+      fetchVehicles().then(setVehicles).catch(() => {})
+    }
+
     loadData()
-    // Refresh when app resumes (driver opens PWA after admin updates vehicle assignment)
+    // Refresh when app resumes so driver sees changes made in ERP without logout
     const handleVisibility = () => { if (document.visibilityState === 'visible') loadData() }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
