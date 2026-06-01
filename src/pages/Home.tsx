@@ -131,7 +131,13 @@ export function Home({ onNavigate }: HomeProps) {
       setLiters(''); setCost(''); setOdometer(''); setHourmeter('')
       setFuelStation(''); setNotes(''); setPhotoFile(null); setPhotoPreview(null)
     } catch (err: any) {
-      showToast('error', err.message ?? 'Erro ao registrar abastecimento')
+      const msg = err.message ?? 'Erro ao registrar abastecimento'
+      // Erros de validação (hodômetro/horímetro inválido) ficam no banner persistente
+      if (msg.includes('inválido') || msg.includes('inválida')) {
+        setApiError(msg)
+      } else {
+        showToast('error', msg)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -169,14 +175,18 @@ export function Home({ onNavigate }: HomeProps) {
 
       {/* API error banner */}
       {apiError && (
-        <div className="mx-4 mt-3 px-4 py-3 rounded-lg text-sm bg-red-100 text-red-800 flex items-center justify-between gap-3">
-          <span>{apiError}</span>
-          <button
-            onClick={() => setRetryKey(k => k + 1)}
-            className="shrink-0 text-red-700 underline text-xs font-medium"
-          >
-            Tentar novamente
-          </button>
+        <div className="mx-4 mt-3 px-4 py-3 rounded-lg text-sm bg-red-100 text-red-800 flex items-start justify-between gap-3">
+          <span className="leading-snug">{apiError}</span>
+          <div className="shrink-0 flex gap-3">
+            {!apiError.includes('inválid') && (
+              <button onClick={() => setRetryKey(k => k + 1)} className="text-red-700 underline text-xs font-medium">
+                Tentar novamente
+              </button>
+            )}
+            <button onClick={() => setApiError('')} className="text-red-700 underline text-xs font-medium">
+              Fechar
+            </button>
+          </div>
         </div>
       )}
 
