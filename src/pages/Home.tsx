@@ -90,6 +90,11 @@ export function Home({ onNavigate }: HomeProps) {
     e.preventDefault()
     if (!vehicleId) return
 
+    if (!odometer && !hourmeter) {
+      showToast('error', 'Informe o hodômetro (km) ou horímetro (h).')
+      return
+    }
+
     setSubmitting(true)
     try {
       let photoUrl: string | undefined
@@ -250,14 +255,16 @@ export function Home({ onNavigate }: HomeProps) {
         {/* Odometer + Hourmeter */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Hodômetro (km)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Hodômetro (km) <span className="text-gray-400 font-normal text-xs">*um obrigatório</span>
+            </label>
             <input
               type="number"
               min="0"
               step="1"
               value={odometer}
               onChange={e => setOdometer(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className={`w-full border rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${!odometer && !hourmeter ? 'border-amber-400' : 'border-gray-300'}`}
               placeholder="0"
             />
           </div>
@@ -269,7 +276,7 @@ export function Home({ onNavigate }: HomeProps) {
               step="0.1"
               value={hourmeter}
               onChange={e => setHourmeter(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className={`w-full border rounded-lg px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 ${!odometer && !hourmeter ? 'border-amber-400' : 'border-gray-300'}`}
               placeholder="0,0"
             />
           </div>
