@@ -33,7 +33,7 @@ export function History({ onNavigate }: HistoryProps) {
     fetchVehicles().then(vs => {
       setVehicles(vs)
       if (vs.length > 0) setVehicleId(vs[0].id)
-    }).catch(() => {})
+    }).catch(() => setError('Não foi possível carregar veículos. Verifique sua conexão.'))
   }, [])
 
   useEffect(() => {
@@ -48,19 +48,16 @@ export function History({ onNavigate }: HistoryProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-blue-700 text-white px-4 py-4 flex items-center gap-3">
-        <button onClick={() => onNavigate('home')} className="text-blue-200 text-xl leading-none">←</button>
-        <div>
-          <div className="font-bold text-lg">Histórico</div>
-          <div className="text-blue-200 text-xs">Últimos 60 dias</div>
-        </div>
+      <header className="bg-brand-700 text-white px-4 py-3 flex items-center gap-3">
+        <button onClick={() => onNavigate('home')} className="text-brand-100 text-xl leading-none">←</button>
+        <img src="/logo.svg" alt="Quantitech" className="h-8 brightness-0 invert" />
       </header>
 
       <div className="p-4 max-w-lg mx-auto space-y-4">
         <select
           value={vehicleId}
           onChange={e => setVehicleId(e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-gray-300 rounded-lg px-3 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-brand-500"
         >
           {vehicles.map(v => (
             <option key={v.id} value={v.id}>
@@ -80,7 +77,7 @@ export function History({ onNavigate }: HistoryProps) {
           <div key={log.id} className="bg-white rounded-xl shadow-sm p-4 space-y-2">
             <div className="flex justify-between items-center">
               <span className="font-semibold text-gray-800">{fmtDate(log.date)}</span>
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">
                 {log.source === 'MANUAL' ? 'Manual' : 'Dispositivo'}
               </span>
             </div>
@@ -97,7 +94,7 @@ export function History({ onNavigate }: HistoryProps) {
 
             {log.photoUrl && (
               <a href={log.photoUrl} target="_blank" rel="noreferrer"
-                className="text-blue-600 text-xs underline">
+                className="text-brand-600 text-xs underline">
                 Ver comprovante
               </a>
             )}

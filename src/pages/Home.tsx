@@ -28,15 +28,18 @@ export function Home({ onNavigate }: HomeProps) {
   const [uploading, setUploading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null)
+  const [apiError, setApiError] = useState('')
+  const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
     function loadData() {
+      setApiError('')
       fetchProfile()
         .then(p => {
           setProfile(p)
           if (p.vehicleId) setVehicleId(p.vehicleId)
         })
-        .catch(() => {})
+        .catch(() => setApiError('Não foi possível conectar ao servidor. Verifique sua conexão.'))
       fetchVehicles().then(setVehicles).catch(() => {})
     }
 
@@ -45,7 +48,7 @@ export function Home({ onNavigate }: HomeProps) {
     const handleVisibility = () => { if (document.visibilityState === 'visible') loadData() }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [])
+  }, [retryKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // auto-sync on reconnect
   useEffect(() => {
@@ -158,6 +161,19 @@ export function Home({ onNavigate }: HomeProps) {
           </button>
         </div>
       </header>
+
+      {/* API error banner */}
+      {apiError && (
+        <div className="mx-4 mt-3 px-4 py-3 rounded-lg text-sm bg-red-100 text-red-800 flex items-center justify-between gap-3">
+          <span>{apiError}</span>
+          <button
+            onClick={() => setRetryKey(k => k + 1)}
+            className="shrink-0 text-red-700 underline text-xs font-medium"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
 
       {/* Toast */}
       {toast && (
