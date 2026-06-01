@@ -62,7 +62,9 @@ export async function postConsumptionLog(payload: ConsumptionLogPayload): Promis
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err.message ?? 'Erro ao registrar abastecimento')
+    if (err.errors) console.error('[PWA] validation errors:', err.errors, 'payload:', payload)
+    const fields = err.errors ? ' — campos: ' + Object.keys(err.errors).join(', ') : ''
+    throw new Error((err.message ?? 'Erro ao registrar abastecimento') + fields)
   }
   return res.json()
 }

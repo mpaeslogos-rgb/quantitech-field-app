@@ -36,6 +36,11 @@ export async function getQueueCount(): Promise<number> {
   return database.count('queue')
 }
 
+export async function clearQueue(): Promise<void> {
+  const database = await getDb()
+  await database.clear('queue')
+}
+
 export async function syncQueue(): Promise<{ synced: number; failed: number }> {
   const database = await getDb()
   const all = await database.getAll('queue')
@@ -43,6 +48,11 @@ export async function syncQueue(): Promise<{ synced: number; failed: number }> {
   let failed = 0
 
   for (const entry of all) {
+    // skip entries with invalid vehicleId — remove them from queue
+    if (!entry.payload.vehicleId) {
+      await database.delete('queue', entry.id!)
+      continue
+    }
     try {
       await postConsumptionLog(entry.payload)
       await database.delete('queue', entry.id!)
