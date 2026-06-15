@@ -2,12 +2,28 @@ import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
+const API_URL = import.meta.env.VITE_API_URL as string
+
 export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [companyName, setCompanyName] = useState<string | null>(null)
+
+  async function handleEmailBlur() {
+    const domain = email.trim().split('@')[1]
+    if (!domain) { setCompanyName(null); return }
+    try {
+      const res = await fetch(`${API_URL}/tenants/branding?domain=${encodeURIComponent(domain)}`)
+      if (!res.ok) { setCompanyName(null); return }
+      const data = await res.json()
+      setCompanyName(data.tenantName ?? null)
+    } catch {
+      setCompanyName(null)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -23,7 +39,9 @@ export function Login() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <img src="/logo.svg" alt="Quantitech" className="h-10 mx-auto" />
-          <p className="text-gray-500 text-sm mt-3">Quantitech Field</p>
+          <p className="text-gray-500 text-sm mt-3">
+            {companyName ? `${companyName} Field` : 'Quantitech Field'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-md p-6 space-y-4">
@@ -42,6 +60,7 @@ export function Login() {
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
+              onBlur={handleEmailBlur}
               className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="seu@email.com"
               autoComplete="username"
