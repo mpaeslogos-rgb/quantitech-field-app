@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 
 export function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -20,8 +22,8 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-4xl font-bold text-blue-700">QT</div>
-          <p className="text-gray-500 text-sm mt-1">Quantitech Field</p>
+          <img src="/logo.svg" alt="Quantitech" className="h-10 mx-auto" />
+          <p className="text-gray-500 text-sm mt-3">Quantitech Field</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-md p-6 space-y-4">
@@ -40,7 +42,7 @@ export function Login() {
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder="seu@email.com"
               autoComplete="username"
             />
@@ -48,21 +50,28 @@ export function Login() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-              autoComplete="current-password"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+              <button type="button" tabIndex={-1}
+                onClick={() => setShowPassword(v => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-700 text-white font-semibold rounded-lg py-3 text-sm disabled:opacity-60 active:bg-blue-800"
+            className="w-full bg-brand-700 text-white font-semibold rounded-lg py-3 text-sm disabled:opacity-60 active:bg-brand-800"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
