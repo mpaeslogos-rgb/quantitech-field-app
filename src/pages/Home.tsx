@@ -130,8 +130,8 @@ export function Home({ onNavigate }: HomeProps) {
       // reset form
       setLiters(''); setCost(''); setOdometer(''); setHourmeter('')
       setFuelStation(''); setNotes(''); setPhotoFile(null); setPhotoPreview(null)
-    } catch (err: any) {
-      const msg = err.message ?? 'Erro ao registrar abastecimento'
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao registrar abastecimento'
       // Erros de validação (hodômetro/horímetro inválido) ficam no banner persistente
       if (msg.includes('inválido') || msg.includes('inválida')) {
         setApiError(msg)
