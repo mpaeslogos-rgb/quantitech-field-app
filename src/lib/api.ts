@@ -26,6 +26,8 @@ export interface ConsumptionLogPayload {
   fuelType?: string
   fuelStation?: string
   photoUrl?: string
+  latitude?: number
+  longitude?: number
   notes?: string
 }
 

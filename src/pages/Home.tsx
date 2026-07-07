@@ -3,6 +3,23 @@ import { supabase } from '../lib/supabase'
 import { fetchVehicles, fetchProfile, postConsumptionLog } from '../lib/api'
 import type { Vehicle, UserProfile } from '../lib/api'
 import { enqueue, syncQueue } from '../lib/offlineQueue'
+import { uploadPhoto } from '../lib/photoUpload'
+
+// Geolocalização é sempre opcional — permissão negada ou timeout nunca
+// bloqueia o envio do abastecimento (Fase 1, item 3).
+function getLocation(): Promise<{ latitude: number; longitude: number } | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null)
+      return
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      () => resolve(null),
+      { timeout: 5000, maximumAge: 60000 },
+    )
+  })
+}
 
 const FUEL_TYPES = ['DIESEL', 'GASOLINA', 'ETANOL', 'BIODIESEL', 'GNV']
 
@@ -48,7 +65,7 @@ export function Home({ onNavigate }: HomeProps) {
     const handleVisibility = () => { if (document.visibilityState === 'visible') loadData() }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [retryKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [retryKey])
 
   // auto-sync on reconnect
   useEffect(() => {
@@ -69,23 +86,6 @@ export function Home({ onNavigate }: HomeProps) {
     setPhotoPreview(URL.createObjectURL(file))
   }
 
-  async function uploadPhoto(file: File): Promise<string | undefined> {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) return undefined
-
-    const ext = file.name.split('.').pop() ?? 'jpg'
-    const path = `receipts/${session.user.id}/${Date.now()}.${ext}`
-
-    const { error } = await supabase.storage.from('consumption-receipts').upload(path, file, {
-      cacheControl: '3600',
-      upsert: false,
-    })
-    if (error) throw error
-
-    const { data } = supabase.storage.from('consumption-receipts').getPublicUrl(path)
-    return data.publicUrl
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!vehicleId) return
@@ -95,17 +95,17 @@ export function Home({ onNavigate }: HomeProps) {
       return
     }
 
+    if (!photoFile) {
+      showToast('error', 'Foto do comprovante é obrigatória.')
+      return
+    }
+
     setSubmitting(true)
     try {
-      let photoUrl: string | undefined
-      if (photoFile) {
-        setUploading(true)
-        try { photoUrl = await uploadPhoto(photoFile) } catch { /* store without photo */ }
-        setUploading(false)
-      }
+      const location = await getLocation()
 
       const today = new Date().toISOString().split('T')[0]
-      const payload = {
+      const basePayload = {
         vehicleId,
         date: today,
         source: 'MANUAL' as const,
@@ -115,15 +115,26 @@ export function Home({ onNavigate }: HomeProps) {
         hourmeter: hourmeter ? parseFloat(hourmeter) : undefined,
         fuelType,
         fuelStation: fuelStation || undefined,
-        photoUrl,
+        latitude: location?.latitude,
+        longitude: location?.longitude,
         notes: notes || undefined,
       }
 
       if (navigator.onLine) {
-        await postConsumptionLog(payload)
+        // Caminho online: faz upload da foto agora e envia tudo junto —
+        // se o upload falhar (ex.: sinal caiu no meio do processo), a foto
+        // some silenciosamente e o registro é enviado sem ela.
+        setUploading(true)
+        let photoUrl: string | undefined
+        try { photoUrl = await uploadPhoto(photoFile) } catch { /* segue sem foto, ver nota abaixo */ }
+        setUploading(false)
+        await postConsumptionLog({ ...basePayload, photoUrl })
         showToast('success', 'Abastecimento registrado!')
       } else {
-        await enqueue(payload)
+        // Caminho offline: nunca tenta upload agora (sempre falharia sem
+        // rede) — guarda a foto original como Blob e faz o upload só
+        // dentro de syncQueue(), quando a conexão voltar.
+        await enqueue(basePayload, photoFile)
         showToast('success', 'Salvo offline — será enviado quando conectar.')
       }
 
@@ -319,9 +330,9 @@ export function Home({ onNavigate }: HomeProps) {
 
         {/* Photo */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Foto do comprovante</label>
-          <label className="flex items-center gap-2 border border-dashed border-gray-300 rounded-lg px-3 py-3 cursor-pointer bg-white hover:bg-gray-50">
-            <span className="text-sm text-gray-500">{photoFile ? photoFile.name : 'Tirar foto ou escolher arquivo'}</span>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Foto do comprovante *</label>
+          <label className={`flex items-center gap-2 border rounded-lg px-3 py-3 cursor-pointer bg-white hover:bg-gray-50 ${photoFile ? 'border-dashed border-gray-300' : 'border-amber-400 border-dashed'}`}>
+            <span className="text-sm text-gray-500">{photoFile ? photoFile.name : 'Tirar foto ou escolher arquivo (obrigatório)'}</span>
             <input
               type="file"
               accept="image/*"
@@ -350,10 +361,10 @@ export function Home({ onNavigate }: HomeProps) {
 
         <button
           type="submit"
-          disabled={submitting || !vehicleId}
+          disabled={submitting || !vehicleId || !photoFile}
           className="w-full bg-brand-700 text-white font-semibold rounded-xl py-4 text-base disabled:opacity-60 active:bg-brand-800"
         >
-          {uploading ? 'Enviando foto...' : submitting ? 'Registrando...' : 'Registrar Abastecimento'}
+          {uploading ? 'Enviando foto...' : submitting ? 'Registrando...' : !photoFile ? 'Anexe a foto do comprovante' : 'Registrar Abastecimento'}
         </button>
       </form>
     </div>

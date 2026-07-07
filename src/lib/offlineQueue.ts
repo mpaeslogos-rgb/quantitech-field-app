@@ -2,10 +2,17 @@ import { openDB } from 'idb'
 import type { DBSchema, IDBPDatabase } from 'idb'
 import type { ConsumptionLogPayload } from './api'
 import { postConsumptionLog } from './api'
+import { uploadPhoto } from './photoUpload'
 
 interface QueuedEntry {
   id?: number
   payload: ConsumptionLogPayload
+  // Foto original, guardada como Blob quando o envio acontece offline —
+  // o upload para o Supabase Storage só é feito dentro de syncQueue(),
+  // quando a conexão volta (Fase 1, item 3: antes disso, uploadPhoto()
+  // era chamado incondicionalmente antes do branch online/offline e
+  // falhava silenciosamente offline, perdendo a foto original).
+  photoBlob?: Blob
   queuedAt: string
 }
 
@@ -26,9 +33,9 @@ async function getDb() {
   return db
 }
 
-export async function enqueue(payload: ConsumptionLogPayload): Promise<void> {
+export async function enqueue(payload: ConsumptionLogPayload, photoBlob?: Blob): Promise<void> {
   const database = await getDb()
-  await database.add('queue', { payload, queuedAt: new Date().toISOString() })
+  await database.add('queue', { payload, photoBlob, queuedAt: new Date().toISOString() })
 }
 
 export async function getQueueCount(): Promise<number> {
@@ -54,7 +61,15 @@ export async function syncQueue(): Promise<{ synced: number; failed: number }> {
       continue
     }
     try {
-      await postConsumptionLog(entry.payload)
+      let payload = entry.payload
+      if (entry.photoBlob && !payload.photoUrl) {
+        // Se o upload falhar aqui (ainda sem sinal, erro do Storage), a
+        // exceção cai no catch abaixo e o item permanece na fila para a
+        // próxima tentativa — nunca envia sem a foto original silenciosamente.
+        const photoUrl = await uploadPhoto(entry.photoBlob)
+        payload = { ...payload, photoUrl }
+      }
+      await postConsumptionLog(payload)
       await database.delete('queue', entry.id!)
       synced++
     } catch {
