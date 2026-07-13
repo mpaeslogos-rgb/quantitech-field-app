@@ -4,6 +4,8 @@ import { fetchVehicles, fetchProfile, postConsumptionLog } from '../lib/api'
 import type { Vehicle, UserProfile } from '../lib/api'
 import { enqueue, syncQueue } from '../lib/offlineQueue'
 import { uploadPhoto } from '../lib/photoUpload'
+import { consumeLoginEvent } from '../lib/authEvents'
+import { ForcedPasswordChangeScreen } from '../components/ForcedPasswordChangeScreen'
 
 // Geolocalização é sempre opcional — permissão negada ou timeout nunca
 // bloqueia o envio do abastecimento (Fase 1, item 3).
@@ -49,9 +51,9 @@ export function Home({ onNavigate }: HomeProps) {
   const [retryKey, setRetryKey] = useState(0)
 
   useEffect(() => {
-    function loadData() {
+    function loadData(isLoginEvent: boolean) {
       setApiError('')
-      fetchProfile()
+      fetchProfile(isLoginEvent)
         .then(p => {
           setProfile(p)
           if (p.vehicleId) setVehicleId(p.vehicleId)
@@ -60,9 +62,11 @@ export function Home({ onNavigate }: HomeProps) {
       fetchVehicles().then(setVehicles).catch(() => {})
     }
 
-    loadData()
+    // Só a chamada de montagem/retry conta como acesso — a de
+    // visibilitychange é só refresh de tela, não um login novo.
+    loadData(consumeLoginEvent())
     // Refresh when app resumes so driver sees changes made in ERP without logout
-    const handleVisibility = () => { if (document.visibilityState === 'visible') loadData() }
+    const handleVisibility = () => { if (document.visibilityState === 'visible') loadData(false) }
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [retryKey])
@@ -155,6 +159,14 @@ export function Home({ onNavigate }: HomeProps) {
   }
 
   const selectedVehicle = vehicles.find(v => v.id === vehicleId)
+
+  if (profile?.mustChangePassword) {
+    return (
+      <ForcedPasswordChangeScreen
+        onChanged={() => setProfile(p => (p ? { ...p, mustChangePassword: false } : p))}
+      />
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

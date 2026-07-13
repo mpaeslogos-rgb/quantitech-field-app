@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
+import { markLoginEvent } from './lib/authEvents'
 import { Login } from './pages/Login'
 import { Home } from './pages/Home'
 import { History } from './pages/History'
@@ -16,7 +17,8 @@ function App() {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') setSession(s)
+      if (event === 'SIGNED_IN') { markLoginEvent(); setSession(s) }
+      else if (event === 'TOKEN_REFRESHED') setSession(s)
       if (event === 'SIGNED_OUT') setSession(null)
     })
 

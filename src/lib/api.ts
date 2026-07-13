@@ -42,12 +42,26 @@ export interface UserProfile {
   role: string
   vehicleId: string | null
   vehicle: { id: string; plate: string; model: string | null; type: string; sector: string | null } | null
+  mustChangePassword: boolean
 }
 
-export async function fetchProfile(): Promise<UserProfile> {
-  const res = await fetch(`${BASE}/auth/me`, { headers: await authHeaders() })
-  if (!res.ok) throw new Error('Erro ao carregar perfil')
+export async function fetchProfile(isLoginEvent = false): Promise<UserProfile> {
+  const url = `${BASE}/auth/me${isLoginEvent ? '?loginEvent=true' : ''}`
+  const res = await fetch(url, { headers: await authHeaders() })
+  if (!res.ok && res.status !== 403) throw new Error('Erro ao carregar perfil')
   return res.json()
+}
+
+export async function changePassword(newPassword: string): Promise<void> {
+  const res = await fetch(`${BASE}/auth/change-password`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify({ newPassword }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.message ?? 'Erro ao trocar senha')
+  }
 }
 
 export async function fetchVehicles(): Promise<Vehicle[]> {
