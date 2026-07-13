@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { changePassword } from '../lib/api'
+import { supabase } from '../lib/supabase'
 
 export function ForcedPasswordChangeScreen({ onChanged }: { onChanged: () => void }) {
   const [password, setPassword] = useState('')
@@ -14,6 +15,14 @@ export function ForcedPasswordChangeScreen({ onChanged }: { onChanged: () => voi
     setLoading(true)
     try {
       await changePassword(password)
+      // Trocar a senha invalida a sessão/token atual no Supabase — refaz o
+      // login com a nova senha na hora para não deixar o app com um token
+      // morto logo em seguida.
+      const { data } = await supabase.auth.getSession()
+      const email = data.session?.user.email
+      if (email) {
+        await supabase.auth.signInWithPassword({ email, password })
+      }
       onChanged()
     } catch (err: any) {
       setError(err.message ?? 'Erro ao trocar senha')
