@@ -24,8 +24,8 @@ export function ForcedPasswordChangeScreen({ onChanged }: { onChanged: () => voi
         await supabase.auth.signInWithPassword({ email, password })
       }
       onChanged()
-    } catch (err: any) {
-      setError(err.message ?? 'Erro ao trocar senha')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao trocar senha')
     } finally {
       setLoading(false)
     }
