@@ -73,7 +73,17 @@ export function Home({ onNavigate }: HomeProps) {
 
   // auto-sync on reconnect
   useEffect(() => {
-    const handleOnline = () => syncQueue().catch(() => {})
+    const handleOnline = () => {
+      syncQueue()
+        .then(({ synced, failed }) => {
+          if (failed > 0) {
+            showToast('error', `${synced} lançamento(s) sincronizado(s), ${failed} não puderam ser enviados.`)
+          } else if (synced > 0) {
+            showToast('success', `${synced} lançamento(s) sincronizado(s).`)
+          }
+        })
+        .catch(() => {})
+    }
     window.addEventListener('online', handleOnline)
     return () => window.removeEventListener('online', handleOnline)
   }, [])
@@ -122,6 +132,11 @@ export function Home({ onNavigate }: HomeProps) {
         latitude: location?.latitude,
         longitude: location?.longitude,
         notes: notes || undefined,
+        // Gerado uma vez aqui, antes de qualquer tentativa de envio — se o
+        // usuário reenviar depois de um erro ambíguo, ou se o syncQueue()
+        // retentar depois de uma resposta perdida, o backend reconhece a
+        // mesma submissão em vez de criar um registro duplicado.
+        clientRequestId: crypto.randomUUID(),
       }
 
       if (navigator.onLine) {

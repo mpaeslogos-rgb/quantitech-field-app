@@ -55,9 +55,13 @@ export async function syncQueue(): Promise<{ synced: number; failed: number }> {
   let failed = 0
 
   for (const entry of all) {
-    // skip entries with invalid vehicleId — remove them from queue
+    // Entrada corrompida (sem vehicleId) nunca vai conseguir sincronizar —
+    // remove da fila, mas conta como falha em vez de sumir sem rastro, para
+    // o usuário/telemetria saberem que um lançamento se perdeu.
     if (!entry.payload.vehicleId) {
+      console.error('[offlineQueue] entrada sem vehicleId descartada', entry)
       await database.delete('queue', entry.id!)
+      failed++
       continue
     }
     try {

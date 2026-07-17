@@ -29,6 +29,10 @@ export interface ConsumptionLogPayload {
   latitude?: number
   longitude?: number
   notes?: string
+  // Gerado uma vez por submissão (ver Home.tsx) e reenviado sem mudar em
+  // toda retentativa — o backend trata isso como idempotente, evitando
+  // duplicata quando a resposta se perde após uma escrita já concluída.
+  clientRequestId: string
 }
 
 export interface ConsumptionLog extends ConsumptionLogPayload {
